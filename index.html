@@ -31,8 +31,10 @@
       padding: 10px 20px;
       margin: 10px;
       cursor: pointer;
+      text-align: center;
+      vertical-align: middle;
     }
-    /* Container for the on-screen controls */
+    /* Container for the on-screen directional buttons */
     #directionalControls {
       display: inline-block;
       margin: 20px;
@@ -41,15 +43,24 @@
       width: 60px;
       height: 60px;
       margin: 5px;
+      text-align: center;
+      vertical-align: middle;
     }
     /* Arrange arrow buttons like a laptop keyboard */
     #middleRow {
       display: flex;
       justify-content: center;
     }
-    /* Container for both control groups (arrows + extra buttons) */
+    /* Container for all controls */
     #controls {
       margin-bottom: 20px;
+    }
+    /* Styling for the minimalistic down arrow */
+    #downArrow {
+      font-size: 24px;
+      color: #eee;
+      text-align: center;
+      margin: 10px 0;
     }
   </style>
 </head>
@@ -68,8 +79,11 @@
         <button id="rightButton">Right</button>
       </div>
     </div>
-    <!-- Reset game and extra request buttons -->
+    <!-- Reset game button -->
     <button id="restartButton">Reset Game</button>
+    <!-- Minimalistic down arrow indicator -->
+    <div id="downArrow">&#x2193;</div>
+    <!-- Extra request button -->
     <button id="requestButton">request your own game to gift someone!</button>
   </div>
   
@@ -80,8 +94,8 @@
 
     // Grid settings.
     let gridSize = 15;      // Number of cells per row/column.
-    let cellSize;           // Will be computed based on canvas size.
-    let artFontSize;        // Font size used to draw ASCII art.
+    let cellSize;           // Computed based on canvas size.
+    let artFontSize;        // Font size used for ASCII art.
 
     // Responsive canvas sizing.
     function resizeCanvas() {
@@ -102,7 +116,7 @@
     // Variables to manage the "yeh bro!" message.
     let showMessage = false;
     let messageTimestamp = 0;
-    const messageDuration = 500;  // Display duration in milliseconds
+    const messageDuration = 500;  // 0.5 seconds.
 
     // Initialize the snake.
     function getInitialSnake() {
@@ -133,8 +147,8 @@
       "\\|/"
     ];
 
-    // Helper function to draw multi-line ASCII art centered at (centerX, centerY)
-    // and add a label below the art.
+    // Helper: Draw multi-line ASCII art centered at (centerX, centerY)
+    // with a label below.
     function drawArt(artArray, centerX, centerY, fontSize, artColor, labelText) {
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
@@ -182,7 +196,7 @@
       // Add the new head.
       snake.unshift(newHead);
 
-      // If food is eaten...
+      // Check if food is eaten.
       if (newHead.x === food.x && newHead.y === food.y) {
         score++;
         document.getElementById('score').innerText = "Score: " + score;
@@ -191,14 +205,14 @@
         showMessage = true;
         messageTimestamp = Date.now();
       } else {
-        // Remove tail segment if no food eaten.
+        // Remove tail segment.
         snake.pop();
       }
     }
 
-    // Draw everything.
+    // Draw game elements.
     function draw() {
-      // Clear the canvas.
+      // Clear canvas.
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -212,10 +226,10 @@
         const centerX = segment.x * cellSize + cellSize / 2;
         const centerY = segment.y * cellSize + cellSize / 2;
         if (index === 0) {
-          // Draw the head with the surfer ASCII art and label "surfer Ricky".
+          // Draw head with surfer art.
           drawArt(surferArt, centerX, centerY, artFontSize, "#ff0", "surfer Ricky");
         } else {
-          // For body segments, draw a simple surfboard marker.
+          // Body segments.
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.font = artFontSize + "px monospace";
@@ -224,7 +238,7 @@
         }
       });
 
-      // If the food was just eaten, show "yeh bro!" for 0.5 seconds.
+      // Show "yeh bro!" message if triggered.
       if (showMessage) {
         if (Date.now() - messageTimestamp < messageDuration) {
           ctx.textAlign = "center";
@@ -238,7 +252,7 @@
       }
     }
 
-    // Get a random grid cell that is not occupied by the snake.
+    // Get a random cell not occupied by the snake.
     function randomFoodPosition() {
       let position;
       let collision;
@@ -264,7 +278,7 @@
       alert("Game Over! Your score: " + score);
     }
 
-    // Reset the game.
+    // Reset game.
     function resetGame() {
       clearInterval(gameInterval);
       score = 0;
