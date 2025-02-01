@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ricky Plaza the surfer!</title>
   <style>
+    /* GENERAL STYLES */
     body {
       background-color: #222;
       color: #eee;
@@ -17,19 +18,19 @@
     h1 {
       margin-top: 20px;
     }
-    /* The game canvas (square) */
+    /* GAME CANVAS */
     canvas {
       background-color: #000;
       display: block;
       margin: 20px auto;
       border: 2px solid #555;
     }
-    /* Free game message below the canvas */
+    /* MESSAGE FOR FREE GAME OFFER */
     #freeGameMessage {
       font-size: 1.1em;
       margin: 10px 0;
     }
-    /* Bottom row: two columns – left for reset & mute, right for score */
+    /* BOTTOM ROW: Left = Reset/Mute; Right = Score */
     #bottomRow {
       display: flex;
       justify-content: space-between;
@@ -46,7 +47,7 @@
       align-items: center;
       justify-content: center;
     }
-    /* The small, light‑red down arrow (to the right of Reset Game button) */
+    /* Small, light-red down arrow placed inline to the right of the Reset Game button */
     #downArrow {
       font-size: 16px;
       color: lightcoral;
@@ -56,7 +57,7 @@
       text-align: right;
       flex-grow: 1;
     }
-    /* Larger directional buttons */
+    /* DIRECTIONAL CONTROLS – Big buttons for mobile */
     #directionalControls {
       margin: 20px auto;
     }
@@ -68,12 +69,12 @@
       text-align: center;
       vertical-align: middle;
     }
-    /* Arrange arrow buttons like a laptop keyboard */
+    /* Arrange Up above, and Left/Down/Right in one row */
     #middleRow {
       display: flex;
       justify-content: center;
     }
-    /* Request button */
+    /* Request custom game button */
     #requestButton {
       font-size: 1.2em;
       padding: 10px 20px;
@@ -93,26 +94,26 @@
   <h1>Ricky Plaza the surfer!</h1>
   <canvas id="gameCanvas"></canvas>
   
-  <!-- Free game message -->
+  <!-- Free game offer message -->
   <div id="freeGameMessage">
     scoring 25 will allow you to request a custom game for free! 🎁
   </div>
   
-  <!-- Bottom row: Reset Game button (with arrow and mute) and Score tally -->
+  <!-- Bottom row: left column contains Reset Game and Mute buttons; right column shows score -->
   <div id="bottomRow">
     <div id="leftControls">
       <div id="resetContainer">
         <button id="restartButton">Reset Game</button>
         <span id="downArrow">&#x2193;</span>
       </div>
-      <button id="muteButton">🔊</button>
+      <button id="muteButton">🔇</button>
     </div>
     <div id="scoreContainer">
       <p id="score">Score: 0</p>
     </div>
   </div>
   
-  <!-- Directional controls -->
+  <!-- Directional controls (mobile-friendly arrow buttons) -->
   <div id="directionalControls">
     <button id="upButton">Up</button>
     <div id="middleRow">
@@ -126,15 +127,15 @@
   <button id="requestButton">request your own game to gift someone!</button>
   
   <script>
-    /********************
-     * CANVAS & GAME SETUP
-     ********************/
+    /***********************
+     * CANVAS & GAME SETUP *
+     ***********************/
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    let gridSize = 15;      // Number of cells per row/column.
-    let cellSize;           // Computed based on canvas size.
-    let artFontSize;        // Font size used for drawing ASCII art.
+    let gridSize = 15;      // The game grid is gridSize x gridSize cells.
+    let cellSize;           // Computed based on the canvas size.
+    let artFontSize;        // Font size used for ASCII art drawings.
     
     function resizeCanvas() {
       canvas.width = Math.min(window.innerWidth * 0.95, 500);
@@ -145,21 +146,21 @@
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
     
-    /********************
-     * GAME VARIABLES
-     ********************/
+    /***********************
+     * GAME VARIABLES *
+     ***********************/
     let score = 0;
-    let direction = { x: 1, y: 0 };  // Starts moving right.
-    let gameSpeed = 150;             // Milliseconds per tick.
+    let direction = { x: 1, y: 0 };  // Initial movement to the right.
+    let gameSpeed = 150;             // Game tick every 150ms.
     let gameInterval;
     let gamePaused = false;          // Paused during countdown.
     
-    // For the "yeh bro!" message.
+    // For displaying "yeh bro!" after eating food.
     let showMessage = false;
     let messageTimestamp = 0;
-    const messageDuration = 500;  // 0.5 seconds.
+    const messageDuration = 500;  // Display duration: 0.5 seconds.
     
-    // Initialize snake.
+    // Initialize snake: start with 3 segments at the center.
     function getInitialSnake() {
       const startX = Math.floor(gridSize / 2);
       const startY = Math.floor(gridSize / 2);
@@ -170,27 +171,26 @@
       ];
     }
     let snake = getInitialSnake();
-    
-    // Place food at a random cell.
     let food = randomFoodPosition();
     
-    /********************
-     * ASCII ART DEFINITIONS
-     ********************/
-    // Surfer art for snake head.
+    /***********************
+     * ASCII ART DEFINITIONS *
+     ***********************/
+    // Surfer art (for snake’s head) and label "surfer Ricky".
     const surferArt = [
       "  \\o/  ",
       "   |   ",
       "  / \\  "
     ];
-    // Surfboard art (food).
+    // Surfboard art (for food) with label "Surfboard".
     const surfboardArt = [
       "/|\\",
       "|||",
       "\\|/"
     ];
     
-    // Draw multi-line ASCII art centered at (centerX, centerY) with a label below.
+    // Helper function to draw multi-line ASCII art centered at (centerX, centerY)
+    // and then draw a label below the art.
     function drawArt(artArray, centerX, centerY, fontSize, artColor, labelText) {
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
@@ -202,19 +202,20 @@
       for (let i = 0; i < artArray.length; i++) {
         ctx.fillText(artArray[i], centerX, startY + i * lineHeight);
       }
-      // Draw the label below the art.
       ctx.font = (fontSize * 0.7) + "px monospace";
       ctx.fillStyle = "#fff";
       ctx.fillText(labelText, centerX, startY + totalHeight + (fontSize * 0.2));
     }
     
-    /********************
-     * BACKGROUND MUSIC SETUP
-     ********************/
-    let isMuted = false;
+    /***********************
+     * BACKGROUND MUSIC SETUP *
+     ***********************/
+    // Default is muted; user must click the mute button to enable sound.
+    let isMuted = true;
     let audioCtx = null;
     let musicInterval = null;
-    const melody = [440, 494, 523, 587, 523, 494, 440]; // Simple melody frequencies.
+    // A simple melody approximating (a snippet of) Hotel California using basic Nokia-style beeps.
+    const melody = [330, 349, 392, 440, 392, 349, 330, 294]; 
     let melodyIndex = 0;
     
     function playBeep(frequency, duration) {
@@ -235,7 +236,7 @@
       if (isMuted) return;
       if (musicInterval) clearInterval(musicInterval);
       musicInterval = setInterval(() => {
-        playBeep(melody[melodyIndex], 100);
+        playBeep(melody[melodyIndex], 150);
         melodyIndex = (melodyIndex + 1) % melody.length;
       }, 500);
     }
@@ -247,9 +248,9 @@
       }
     }
     
-    /********************
-     * MAIN GAME LOOP & LOGIC
-     ********************/
+    /***********************
+     * MAIN GAME LOOP & LOGIC *
+     ***********************/
     function gameLoop() {
       if (!gamePaused) {
         update();
@@ -258,59 +259,59 @@
     }
     
     function update() {
-      // Compute new head position.
+      // Calculate new head position.
       const newHead = {
         x: snake[0].x + direction.x,
         y: snake[0].y + direction.y
       };
-    
+      
       // Wall collision check.
       if (newHead.x < 0 || newHead.x >= gridSize ||
           newHead.y < 0 || newHead.y >= gridSize) {
         return gameOver();
       }
-    
+      
       // Self-collision check.
       for (let segment of snake) {
         if (newHead.x === segment.x && newHead.y === segment.y) {
           return gameOver();
         }
       }
-    
+      
       // Add new head.
       snake.unshift(newHead);
-    
-      /********************
-       * LENIENT FOOD COLLISION DETECTION
-       ********************/
-      let snakeLeft   = newHead.x * cellSize;
-      let snakeTop    = newHead.y * cellSize;
-      let snakeRight  = snakeLeft + cellSize;
+      
+      /**************************************
+       * LENIENT FOOD COLLISION DETECTION *
+       **************************************/
+      let snakeLeft = newHead.x * cellSize;
+      let snakeTop = newHead.y * cellSize;
+      let snakeRight = snakeLeft + cellSize;
       let snakeBottom = snakeTop + cellSize;
-    
+      
       let foodCenterX = food.x * cellSize + cellSize / 2;
       let foodCenterY = food.y * cellSize + cellSize / 2;
-      let foodWidth  = 1.8 * artFontSize; // Approximate width.
-      let foodHeight = 3 * artFontSize;    // 3 lines tall.
-      let foodLeft   = foodCenterX - foodWidth / 2;
-      let foodRight  = foodCenterX + foodWidth / 2;
-      let foodTop    = foodCenterY - foodHeight / 2;
+      let foodWidth = 1.8 * artFontSize;
+      let foodHeight = 3 * artFontSize;
+      let foodLeft = foodCenterX - foodWidth / 2;
+      let foodRight = foodCenterX + foodWidth / 2;
+      let foodTop = foodCenterY - foodHeight / 2;
       let foodBottom = foodCenterY + foodHeight / 2;
-    
+      
+      // Check for overlap between the snake head cell and the food area.
       if (snakeRight > foodLeft && snakeLeft < foodRight &&
           snakeBottom > foodTop && snakeTop < foodBottom) {
-        // Food is eaten.
         score++;
         document.getElementById('score').innerText = "Score: " + score;
         food = randomFoodPosition();
         showMessage = true;
         messageTimestamp = Date.now();
-        // Grow snake by 3 segments (one is already added by unshifting).
+        // Grow snake by 3 segments (one is already added by unshifting new head, plus two more appended).
         let tail = snake[snake.length - 1];
         snake.push({ x: tail.x, y: tail.y });
         snake.push({ x: tail.x, y: tail.y });
       } else {
-        // No food eaten: remove tail.
+        // Remove tail segment if no food eaten.
         snake.pop();
       }
     }
@@ -319,18 +320,18 @@
       // Clear canvas.
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-      // Draw the food (surfboard).
+      
+      // Draw food (the surfboard).
       let foodCenterX = food.x * cellSize + cellSize / 2;
       let foodCenterY = food.y * cellSize + cellSize / 2;
       drawArt(surfboardArt, foodCenterX, foodCenterY, artFontSize, "#0f0", "Surfboard");
-    
+      
       // Draw the snake.
       snake.forEach((segment, index) => {
         let centerX = segment.x * cellSize + cellSize / 2;
         let centerY = segment.y * cellSize + cellSize / 2;
         if (index === 0) {
-          // Head with surfer art and label "surfer Ricky".
+          // Draw the head with the surfer ASCII art and label "surfer Ricky".
           drawArt(surferArt, centerX, centerY, artFontSize, "#ff0", "surfer Ricky");
         } else {
           ctx.textAlign = "center";
@@ -340,8 +341,8 @@
           ctx.fillText("==", centerX, centerY);
         }
       });
-    
-      // Display "yeh bro!" message briefly.
+      
+      // If active, display the "yeh bro!" message for a brief moment.
       if (showMessage) {
         if (Date.now() - messageTimestamp < messageDuration) {
           ctx.textAlign = "center";
@@ -355,6 +356,7 @@
       }
     }
     
+    // Get a random cell for food that is not occupied by the snake.
     function randomFoodPosition() {
       let position;
       let collision;
@@ -377,16 +379,18 @@
     function gameOver() {
       clearInterval(gameInterval);
       stopMusic();
-      alert("Game Over! Your score: " + score);
+      alert("Game Over! Your score: " + score + "\nIf your game is stuck, refresh the page or click the link again!");
+      // Do not auto-restart; allow the user to press "Reset Game" manually.
     }
     
-    /********************
-     * COUNTDOWN & GAME RESET
-     ********************/
+    /***********************
+     * COUNTDOWN & GAME RESET *
+     ***********************/
+    // Displays a big countdown ("2", "1", then "go!") in the middle of the canvas before the game starts.
     function startCountdown(callback) {
       gamePaused = true;
-      let count = 2;  // Start at 2.
-      let countdownInterval = setInterval(function() {
+      let count = 2;  // Countdown starts at 2.
+      let countdownInterval = setInterval(() => {
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#fff";
@@ -397,13 +401,13 @@
           ctx.fillText(count, canvas.width / 2, canvas.height / 2);
         } else if (count === 0) {
           ctx.fillText("go!", canvas.width / 2, canvas.height / 2);
-        }
-        count--;
-        if (count < -1) {
+        } else {
           clearInterval(countdownInterval);
           gamePaused = false;
           callback();
+          return;
         }
+        count--;
       }, 1000);
     }
     
@@ -415,15 +419,18 @@
       direction = { x: 1, y: 0 };
       snake = getInitialSnake();
       food = randomFoodPosition();
-      startCountdown(function() {
-        startMusic();
+      startCountdown(() => {
+        if (!isMuted) {
+          startMusic();
+        }
         gameInterval = setInterval(gameLoop, gameSpeed);
       });
     }
     
-    /********************
-     * CONTROLS & SOUND TOGGLES
-     ********************/
+    /***********************
+     * CONTROLS & SOUND TOGGLES *
+     ***********************/
+    // Keyboard controls.
     document.addEventListener('keydown', function(e) {
       switch (e.key) {
         case "ArrowUp":
@@ -441,7 +448,7 @@
       }
     });
     
-    // Directional on-screen buttons.
+    // On-screen directional buttons.
     document.getElementById('upButton').addEventListener('click', function() {
       if (direction.y !== 1) direction = { x: 0, y: -1 };
     });
@@ -458,7 +465,7 @@
     // Reset Game button.
     document.getElementById('restartButton').addEventListener('click', resetGame);
     
-    // Mute button.
+    // Mute button: toggles sound on/off. (Default is muted.)
     document.getElementById('muteButton').addEventListener('click', function() {
       isMuted = !isMuted;
       if (isMuted) {
