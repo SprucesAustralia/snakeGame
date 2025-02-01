@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Ensures the game scales correctly on mobile devices -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Surfer Snake Game</title>
   <style>
-    /* A dark, retro style */
     body {
       background-color: #222;
       color: #eee;
-      text-align: center;
       font-family: monospace;
+      text-align: center;
       margin: 0;
       padding: 0;
     }
@@ -18,142 +19,186 @@
     }
     canvas {
       background-color: #000;
-      margin: 20px auto;
       display: block;
+      margin: 20px auto;
       border: 2px solid #555;
     }
     #score {
       font-size: 1.5em;
     }
+    button {
+      font-size: 1.2em;
+      padding: 10px 20px;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <h1>Surfer Snake Game</h1>
-  <canvas id="gameCanvas" width="600" height="600"></canvas>
+  <canvas id="gameCanvas"></canvas>
   <p id="score">Score: 0</p>
+  <button id="restartButton">Restart Game</button>
 
   <script>
-    // Get canvas and set up drawing context:
+    // Get the canvas and context.
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Set grid size and cell size (each cell will host one “ASCII sprite”)
-    const cellSize = 30;               // Increase this if you want larger text
-    const cols = canvas.width / cellSize;
-    const rows = canvas.height / cellSize;
+    // Global grid settings – we use a grid of gridSize x gridSize cells.
+    let gridSize = 15;      // Number of cells per row/column.
+    let cellSize;           // Will be computed based on canvas width.
+    let artFontSize;        // Font size for our ASCII art drawings.
 
-    // Game state variables
+    // Responsive canvas sizing.
+    function resizeCanvas() {
+      // Set canvas width to 95% of the viewport width (up to 500px max).
+      canvas.width = Math.min(window.innerWidth * 0.95, 500);
+      canvas.height = canvas.width; // Square canvas.
+      cellSize = canvas.width / gridSize;
+      // Set art font size to about half a cell – adjust if needed.
+      artFontSize = Math.floor(cellSize * 0.5);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Game state variables.
     let score = 0;
-    let direction = { x: 1, y: 0 };     // Start moving to the right
+    let direction = { x: 1, y: 0 };  // Start moving right.
+    let gameSpeed = 150;             // Milliseconds per game tick.
+    let gameInterval;
 
-    // The snake is represented as an array of grid cells.
-    // The first element is the surfer’s head.
-    let snake = [
-      { x: Math.floor(cols / 2), y: Math.floor(rows / 2) },
-      { x: Math.floor(cols / 2) - 1, y: Math.floor(rows / 2) },
-      { x: Math.floor(cols / 2) - 2, y: Math.floor(rows / 2) }
-    ];
+    // The snake is an array of grid positions.
+    function getInitialSnake() {
+      const startX = Math.floor(gridSize / 2);
+      const startY = Math.floor(gridSize / 2);
+      return [
+        { x: startX,     y: startY },
+        { x: startX - 1, y: startY },
+        { x: startX - 2, y: startY }
+      ];
+    }
+    let snake = getInitialSnake();
 
-    // Place the food (the barrel wave) at a random position:
+    // Place food (the barrel wave) at a random cell.
     let food = randomFoodPosition();
 
-    // Game speed (in milliseconds between frames)
-    const gameSpeed = 150;
-    let gameInterval = setInterval(gameLoop, gameSpeed);
+    // --- ASCII Art Definitions --- //
+    // Surfer art: a three-line drawing with a label.
+    const surferArt = [
+      "  \\o/  ",
+      "   |   ",
+      "  / \\  "
+    ];
+    // Barrel (wave) art: a three-line drawing.
+    const barrelArt = [
+      "  ~~~~~  ",
+      " /~~~~~\\ ",
+      "~~~~~~~~~"
+    ];
 
-    // Main game loop: update game state then draw everything.
+    // Helper function: Draw multi-line ASCII art centered at (centerX, centerY)
+    // and then draw a label below the art.
+    function drawArt(artArray, centerX, centerY, fontSize, artColor, labelText) {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.font = fontSize + "px monospace";
+      ctx.fillStyle = artColor;
+      const lineHeight = fontSize;  // Approximate line height.
+      const totalHeight = artArray.length * lineHeight;
+      // Start drawing so that the block is vertically centered.
+      let startY = centerY - totalHeight / 2;
+      for (let i = 0; i < artArray.length; i++) {
+        ctx.fillText(artArray[i], centerX, startY + i * lineHeight);
+      }
+      // Draw the label just below the art in a slightly smaller font.
+      ctx.font = (fontSize * 0.7) + "px monospace";
+      ctx.fillStyle = "#fff";
+      ctx.fillText(labelText, centerX, startY + totalHeight + (fontSize * 0.2));
+    }
+
+    // Main game loop.
     function gameLoop() {
       update();
       draw();
     }
 
-    // Update the snake’s position and handle collisions and food eating.
+    // Update game state: move snake, check collisions, handle food.
     function update() {
-      // Calculate new head position
+      // Compute new head position.
       const newHead = {
         x: snake[0].x + direction.x,
         y: snake[0].y + direction.y
       };
 
-      // Check wall collisions
+      // Check wall collisions.
       if (
-        newHead.x < 0 ||
-        newHead.x >= cols ||
-        newHead.y < 0 ||
-        newHead.y >= rows
+        newHead.x < 0 || newHead.x >= gridSize ||
+        newHead.y < 0 || newHead.y >= gridSize
       ) {
         return gameOver();
       }
 
-      // Check self collision
+      // Check self collision.
       for (let segment of snake) {
         if (newHead.x === segment.x && newHead.y === segment.y) {
           return gameOver();
         }
       }
 
-      // Add new head to the snake
+      // Add the new head.
       snake.unshift(newHead);
 
-      // Check if food is eaten:
+      // If food is eaten, increase score and generate new food.
       if (newHead.x === food.x && newHead.y === food.y) {
         score++;
         document.getElementById('score').innerText = "Score: " + score;
         food = randomFoodPosition();
       } else {
-        // Remove the tail if no food eaten:
+        // Otherwise, remove the tail.
         snake.pop();
       }
     }
 
-    // Draw everything on the canvas.
+    // Draw the current game state.
     function draw() {
-      // Clear the canvas
+      // Clear canvas.
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Set text drawing options:
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = cellSize + "px monospace";
+      // Draw food (barrel wave) using our multi-line art.
+      const foodCenterX = food.x * cellSize + cellSize / 2;
+      const foodCenterY = food.y * cellSize + cellSize / 2;
+      drawArt(barrelArt, foodCenterX, foodCenterY, artFontSize, "#00f", "Barrels");
 
-      // --- Draw the food (the barrel wave) ---
-      // You can change the ASCII art below to suit your style.
-      const foodArt = "~( )~";
-      ctx.fillStyle = "#00f"; // Blue color for the wave/barrel
-      const foodX = food.x * cellSize + cellSize / 2;
-      const foodY = food.y * cellSize + cellSize / 2;
-      ctx.fillText(foodArt, foodX, foodY);
-
-      // --- Draw the snake ---
-      // The head: a surfer guy drawn as "\o/" (the backslash is escaped)
-      // The body (surfboard): drawn as "=="
+      // Draw the snake.
       snake.forEach((segment, index) => {
-        const x = segment.x * cellSize + cellSize / 2;
-        const y = segment.y * cellSize + cellSize / 2;
+        const centerX = segment.x * cellSize + cellSize / 2;
+        const centerY = segment.y * cellSize + cellSize / 2;
         if (index === 0) {
-          ctx.fillStyle = "#ff0"; // Yellow for the surfer’s head
-          const headArt = "\\o/"; // ASCII art for the surfer
-          ctx.fillText(headArt, x, y);
+          // The head: draw the surfer art.
+          drawArt(surferArt, centerX, centerY, artFontSize, "#ff0", "Surfer");
         } else {
-          ctx.fillStyle = "#0ff"; // Cyan for the surfboard (body)
-          const bodyArt = "==";
-          ctx.fillText(bodyArt, x, y);
+          // For the body segments, draw a simple surfboard.
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.font = artFontSize + "px monospace";
+          ctx.fillStyle = "#0ff";
+          ctx.fillText("==", centerX, centerY);
         }
       });
     }
 
-    // Generate a random valid position for the food.
+    // Randomly choose a grid position that is not occupied by the snake.
     function randomFoodPosition() {
       let position;
       let collision;
       do {
         collision = false;
         position = {
-          x: Math.floor(Math.random() * cols),
-          y: Math.floor(Math.random() * rows)
+          x: Math.floor(Math.random() * gridSize),
+          y: Math.floor(Math.random() * gridSize)
         };
-        // Ensure food is not placed on the snake.
         for (let segment of snake) {
           if (segment.x === position.x && segment.y === position.y) {
             collision = true;
@@ -164,36 +209,47 @@
       return position;
     }
 
-    // Handle game over: stop the game and alert the player.
+    // Called when the game is over.
     function gameOver() {
       clearInterval(gameInterval);
       alert("Game Over! Your score: " + score);
-      // Optionally, reload the page to restart:
-      // location.reload();
+      // (You can also choose to automatically restart here.)
     }
 
-    // Listen for arrow key presses to change the direction.
+    // Restart the game: reset state and start the game loop again.
+    function resetGame() {
+      clearInterval(gameInterval);
+      score = 0;
+      document.getElementById('score').innerText = "Score: 0";
+      direction = { x: 1, y: 0 };
+      snake = getInitialSnake();
+      food = randomFoodPosition();
+      gameInterval = setInterval(gameLoop, gameSpeed);
+    }
+
+    // Listen for arrow key presses to change direction.
     document.addEventListener('keydown', function(e) {
-      // Prevent reverse direction.
       switch (e.key) {
         case "ArrowUp":
-          if (direction.y === 1) return;
-          direction = { x: 0, y: -1 };
+          if (direction.y !== 1) direction = { x: 0, y: -1 };
           break;
         case "ArrowDown":
-          if (direction.y === -1) return;
-          direction = { x: 0, y: 1 };
+          if (direction.y !== -1) direction = { x: 0, y: 1 };
           break;
         case "ArrowLeft":
-          if (direction.x === 1) return;
-          direction = { x: -1, y: 0 };
+          if (direction.x !== 1) direction = { x: -1, y: 0 };
           break;
         case "ArrowRight":
-          if (direction.x === -1) return;
-          direction = { x: 1, y: 0 };
+          if (direction.x !== -1) direction = { x: 1, y: 0 };
           break;
       }
     });
+
+    // Attach restart button event.
+    document.getElementById('restartButton').addEventListener('click', resetGame);
+
+    // Start the game loop.
+    gameInterval = setInterval(gameLoop, gameSpeed);
   </script>
 </body>
 </html>
