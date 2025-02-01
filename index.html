@@ -42,16 +42,11 @@
       flex-direction: column;
       align-items: flex-start;
     }
+    /* Reset container now only holds the Reset Game button */
     #resetContainer {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-    }
-    /* Small, light-red down arrow placed inline to the right of the Reset Game button */
-    #downArrow {
-      font-size: 16px;
-      color: lightcoral;
-      margin-left: 10px;
     }
     #scoreContainer {
       text-align: right;
@@ -73,6 +68,26 @@
     #middleRow {
       display: flex;
       justify-content: center;
+      align-items: center;
+    }
+    /* Container for the Right button and the glowing arrow */
+    .rightButtonContainer {
+      position: relative;
+      display: inline-block;
+    }
+    /* The glowing red arrow positioned to the right of the "Right" button */
+    #glowingArrow {
+      position: absolute;
+      top: 50%;
+      right: -20px; /* Adjust offset as needed */
+      transform: translateY(-50%);
+      font-size: 24px;
+      color: red;
+      animation: glow 2s infinite alternate;
+    }
+    @keyframes glow {
+      from { opacity: 0.5; }
+      to { opacity: 1; }
     }
     /* Request custom game button */
     #requestButton {
@@ -104,7 +119,6 @@
     <div id="leftControls">
       <div id="resetContainer">
         <button id="restartButton">Reset Game</button>
-        <span id="downArrow">&#x2193;</span>
       </div>
       <button id="muteButton">🔇</button>
     </div>
@@ -119,7 +133,10 @@
     <div id="middleRow">
       <button id="leftButton">Left</button>
       <button id="downButton">Down</button>
-      <button id="rightButton">Right</button>
+      <div class="rightButtonContainer">
+        <button id="rightButton">Right</button>
+        <span id="glowingArrow">&#x2192;</span>
+      </div>
     </div>
   </div>
   
@@ -176,21 +193,20 @@
     /***********************
      * ASCII ART DEFINITIONS *
      ***********************/
-    // Surfer art (for snake’s head) and label "surfer Ricky".
+    // Surfer art (for snake’s head) with label "surfer Ricky".
     const surferArt = [
-      "  \\o/  ",
+      "  \o/  ",
       "   |   ",
-      "  / \\  "
+      "  / \  "
     ];
     // Surfboard art (for food) with label "Surfboard".
     const surfboardArt = [
-      "/|\\",
+      "/|\",
       "|||",
-      "\\|/"
+      "\|/"
     ];
     
-    // Helper function to draw multi-line ASCII art centered at (centerX, centerY)
-    // and then draw a label below the art.
+    // Helper: Draw multi-line ASCII art centered at (centerX, centerY) and draw label below.
     function drawArt(artArray, centerX, centerY, fontSize, artColor, labelText) {
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
@@ -210,11 +226,11 @@
     /***********************
      * BACKGROUND MUSIC SETUP *
      ***********************/
-    // Default is muted; user must click the mute button to enable sound.
+    // Sound is off by default (isMuted = true). The user must click the Mute button to enable sound.
     let isMuted = true;
     let audioCtx = null;
     let musicInterval = null;
-    // A simple melody approximating (a snippet of) Hotel California using basic Nokia-style beeps.
+    // A simple melody (using basic Nokia-style beeps) that nods to Hotel California.
     const melody = [330, 349, 392, 440, 392, 349, 330, 294]; 
     let melodyIndex = 0;
     
@@ -265,13 +281,13 @@
         y: snake[0].y + direction.y
       };
       
-      // Wall collision check.
+      // Check wall collision.
       if (newHead.x < 0 || newHead.x >= gridSize ||
           newHead.y < 0 || newHead.y >= gridSize) {
         return gameOver();
       }
       
-      // Self-collision check.
+      // Check self-collision.
       for (let segment of snake) {
         if (newHead.x === segment.x && newHead.y === segment.y) {
           return gameOver();
@@ -298,30 +314,45 @@
       let foodTop = foodCenterY - foodHeight / 2;
       let foodBottom = foodCenterY + foodHeight / 2;
       
-      // Check for overlap between the snake head cell and the food area.
       if (snakeRight > foodLeft && snakeLeft < foodRight &&
           snakeBottom > foodTop && snakeTop < foodBottom) {
+        // Food is eaten.
         score++;
         document.getElementById('score').innerText = "Score: " + score;
+        
+        // Increase snake speed by 2% (reduce interval time by 2%)
+        gameSpeed = gameSpeed * 0.98;
+        clearInterval(gameInterval);
+        gameInterval = setInterval(gameLoop, gameSpeed);
+        
         food = randomFoodPosition();
         showMessage = true;
         messageTimestamp = Date.now();
-        // Grow snake by 3 segments (one is already added by unshifting new head, plus two more appended).
+        
+        // Grow snake by 3 segments (one already added plus two extra).
         let tail = snake[snake.length - 1];
         snake.push({ x: tail.x, y: tail.y });
         snake.push({ x: tail.x, y: tail.y });
+        
+        // Winner condition: if score reaches 30, display the winner message.
+        if (score >= 30) {
+          clearInterval(gameInterval);
+          stopMusic();
+          alert("winner! use code free-5nak3! on checkout\nIf your game is stuck, refresh the page or click the link again!");
+          return;
+        }
       } else {
-        // Remove tail segment if no food eaten.
+        // Remove tail if no food is eaten.
         snake.pop();
       }
     }
     
     function draw() {
-      // Clear canvas.
+      // Clear the canvas.
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Draw food (the surfboard).
+      // Draw food (surfboard).
       let foodCenterX = food.x * cellSize + cellSize / 2;
       let foodCenterY = food.y * cellSize + cellSize / 2;
       drawArt(surfboardArt, foodCenterX, foodCenterY, artFontSize, "#0f0", "Surfboard");
@@ -331,7 +362,7 @@
         let centerX = segment.x * cellSize + cellSize / 2;
         let centerY = segment.y * cellSize + cellSize / 2;
         if (index === 0) {
-          // Draw the head with the surfer ASCII art and label "surfer Ricky".
+          // Draw the head with surfer ASCII art and label "surfer Ricky".
           drawArt(surferArt, centerX, centerY, artFontSize, "#ff0", "surfer Ricky");
         } else {
           ctx.textAlign = "center";
@@ -342,7 +373,7 @@
         }
       });
       
-      // If active, display the "yeh bro!" message for a brief moment.
+      // Display "yeh bro!" message briefly.
       if (showMessage) {
         if (Date.now() - messageTimestamp < messageDuration) {
           ctx.textAlign = "center";
@@ -356,7 +387,7 @@
       }
     }
     
-    // Get a random cell for food that is not occupied by the snake.
+    // Get a random food position that does not collide with the snake.
     function randomFoodPosition() {
       let position;
       let collision;
@@ -380,13 +411,13 @@
       clearInterval(gameInterval);
       stopMusic();
       alert("Game Over! Your score: " + score + "\nIf your game is stuck, refresh the page or click the link again!");
-      // Do not auto-restart; allow the user to press "Reset Game" manually.
+      // Do not auto-restart; wait for the user to click "Reset Game."
     }
     
     /***********************
      * COUNTDOWN & GAME RESET *
      ***********************/
-    // Displays a big countdown ("2", "1", then "go!") in the middle of the canvas before the game starts.
+    // Display a countdown ("2", "1", then "go!") before starting the game.
     function startCountdown(callback) {
       gamePaused = true;
       let count = 2;  // Countdown starts at 2.
@@ -416,6 +447,8 @@
       stopMusic();
       score = 0;
       document.getElementById('score').innerText = "Score: 0";
+      // Reset gameSpeed to default.
+      gameSpeed = 150;
       direction = { x: 1, y: 0 };
       snake = getInitialSnake();
       food = randomFoodPosition();
@@ -428,10 +461,13 @@
     }
     
     /***********************
-     * CONTROLS & SOUND TOGGLES *
+     * CONTROLS & PREVENTING PAGE SCROLL *
      ***********************/
-    // Keyboard controls.
+    // Prevent arrow keys from scrolling the page on desktop.
     document.addEventListener('keydown', function(e) {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        e.preventDefault();
+      }
       switch (e.key) {
         case "ArrowUp":
           if (direction.y !== 1) direction = { x: 0, y: -1 };
@@ -465,7 +501,7 @@
     // Reset Game button.
     document.getElementById('restartButton').addEventListener('click', resetGame);
     
-    // Mute button: toggles sound on/off. (Default is muted.)
+    // Mute button toggles sound on/off. (Default is muted.)
     document.getElementById('muteButton').addEventListener('click', function() {
       isMuted = !isMuted;
       if (isMuted) {
