@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Ensures the game scales correctly on mobile devices -->
+  <!-- Ensure proper scaling on mobile devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Surfer Snake Game - made by Leo - a gift for papa</title>
+  <title>Ricky Plaza the surfer!</title>
   <style>
     body {
       background-color: #222;
@@ -14,8 +14,8 @@
       margin: 0;
       padding: 0;
     }
-    h1, h2 {
-      margin: 10px 0;
+    h1 {
+      margin-top: 20px;
     }
     canvas {
       background-color: #000;
@@ -32,58 +32,61 @@
       margin: 10px;
       cursor: pointer;
     }
-    /* Container for on-screen directional buttons */
+    /* Container for the on-screen controls */
     #directionalControls {
-      margin-top: 20px;
       display: inline-block;
+      margin: 20px;
     }
     #directionalControls button {
       width: 60px;
       height: 60px;
       margin: 5px;
     }
-    /* Arrange the arrow buttons in a cross layout */
-    #upButton {
-      display: block;
-      margin: 0 auto 10px;
-    }
+    /* Arrange arrow buttons like a laptop keyboard */
     #middleRow {
       display: flex;
       justify-content: center;
     }
+    /* Container for both control groups (arrows + extra buttons) */
+    #controls {
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>Surfer Snake Game</h1>
-  <h2>made by Leo - a gift for papa</h2>
+  <h1>Ricky Plaza the surfer!</h1>
   <canvas id="gameCanvas"></canvas>
   <p id="score">Score: 0</p>
-  <button id="restartButton">Restart Game</button>
-
-  <!-- On-screen controls for mobile -->
-  <div id="directionalControls">
-    <button id="upButton">Up</button>
-    <div id="middleRow">
-      <button id="leftButton">Left</button>
-      <button id="downButton">Down</button>
-      <button id="rightButton">Right</button>
+  
+  <div id="controls">
+    <!-- Directional buttons -->
+    <div id="directionalControls">
+      <button id="upButton">Up</button>
+      <div id="middleRow">
+        <button id="leftButton">Left</button>
+        <button id="downButton">Down</button>
+        <button id="rightButton">Right</button>
+      </div>
     </div>
+    <!-- Reset game and extra request buttons -->
+    <button id="restartButton">Reset Game</button>
+    <button id="requestButton">request your own game to gift someone!</button>
   </div>
-
+  
   <script>
-    // Get canvas and context.
+    // Get canvas and drawing context.
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
     // Grid settings.
     let gridSize = 15;      // Number of cells per row/column.
-    let cellSize;           // Computed based on canvas size.
-    let artFontSize;        // Font size for ASCII art.
+    let cellSize;           // Will be computed based on canvas size.
+    let artFontSize;        // Font size used to draw ASCII art.
 
-    // Resize canvas responsively (works well on mobile).
+    // Responsive canvas sizing.
     function resizeCanvas() {
       canvas.width = Math.min(window.innerWidth * 0.95, 500);
-      canvas.height = canvas.width; // Keep canvas square.
+      canvas.height = canvas.width;  // Keep it square.
       cellSize = canvas.width / gridSize;
       artFontSize = Math.floor(cellSize * 0.5);
     }
@@ -92,41 +95,45 @@
 
     // Game state variables.
     let score = 0;
-    let direction = { x: 1, y: 0 };  // Start moving right.
-    let gameSpeed = 150;             // Milliseconds per game tick.
+    let direction = { x: 1, y: 0 };  // Starts moving right.
+    let gameSpeed = 150;             // Milliseconds per tick.
     let gameInterval;
 
-    // Initialize the snake in the center.
+    // Variables to manage the "yeh bro!" message.
+    let showMessage = false;
+    let messageTimestamp = 0;
+    const messageDuration = 500;  // Display duration in milliseconds
+
+    // Initialize the snake.
     function getInitialSnake() {
       const startX = Math.floor(gridSize / 2);
       const startY = Math.floor(gridSize / 2);
       return [
-        { x: startX,     y: startY },
+        { x: startX, y: startY },
         { x: startX - 1, y: startY },
         { x: startX - 2, y: startY }
       ];
     }
     let snake = getInitialSnake();
 
-    // Place the food (the surfboard) at a random grid cell.
+    // Place food at a random cell.
     let food = randomFoodPosition();
 
-    // --- ASCII Art Definitions --- //
+    // ASCII Art definitions:
     // Surfer art remains the same.
     const surferArt = [
       "  \\o/  ",
       "   |   ",
       "  / \\  "
     ];
-
-    // Surfboard art – note that backslashes are escaped.
+    // Updated surfboard art.
     const surfboardArt = [
-      " /\\",
-      "|  |",
-      "\\./"
+      "/|\\",
+      "|||",
+      "\\|/"
     ];
 
-    // Helper: Draw multi-line ASCII art centered at (centerX, centerY)
+    // Helper function to draw multi-line ASCII art centered at (centerX, centerY)
     // and add a label below the art.
     function drawArt(artArray, centerX, centerY, fontSize, artColor, labelText) {
       ctx.textAlign = "center";
@@ -139,30 +146,29 @@
       for (let i = 0; i < artArray.length; i++) {
         ctx.fillText(artArray[i], centerX, startY + i * lineHeight);
       }
-      // Draw the label just below the art.
+      // Draw the label below the art.
       ctx.font = (fontSize * 0.7) + "px monospace";
       ctx.fillStyle = "#fff";
       ctx.fillText(labelText, centerX, startY + totalHeight + (fontSize * 0.2));
     }
 
-    // Main game loop: update then draw.
+    // Main game loop.
     function gameLoop() {
       update();
       draw();
     }
 
-    // Update the snake's position, check collisions, and handle food.
+    // Update game state.
     function update() {
+      // Calculate new head position.
       const newHead = {
         x: snake[0].x + direction.x,
         y: snake[0].y + direction.y
       };
 
       // Check for wall collisions.
-      if (
-        newHead.x < 0 || newHead.x >= gridSize ||
-        newHead.y < 0 || newHead.y >= gridSize
-      ) {
+      if (newHead.x < 0 || newHead.x >= gridSize ||
+          newHead.y < 0 || newHead.y >= gridSize) {
         return gameOver();
       }
 
@@ -173,23 +179,26 @@
         }
       }
 
-      // Add new head.
+      // Add the new head.
       snake.unshift(newHead);
 
-      // If food is eaten, increase score and generate new food.
+      // If food is eaten...
       if (newHead.x === food.x && newHead.y === food.y) {
         score++;
         document.getElementById('score').innerText = "Score: " + score;
         food = randomFoodPosition();
+        // Trigger the "yeh bro!" message.
+        showMessage = true;
+        messageTimestamp = Date.now();
       } else {
-        // Otherwise, remove the tail.
+        // Remove tail segment if no food eaten.
         snake.pop();
       }
     }
 
-    // Draw the game state.
+    // Draw everything.
     function draw() {
-      // Clear canvas.
+      // Clear the canvas.
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -203,10 +212,10 @@
         const centerX = segment.x * cellSize + cellSize / 2;
         const centerY = segment.y * cellSize + cellSize / 2;
         if (index === 0) {
-          // Draw the surfer for the snake's head.
-          drawArt(surferArt, centerX, centerY, artFontSize, "#ff0", "Surfer");
+          // Draw the head with the surfer ASCII art and label "surfer Ricky".
+          drawArt(surferArt, centerX, centerY, artFontSize, "#ff0", "surfer Ricky");
         } else {
-          // For body segments, a simple surfboard marker.
+          // For body segments, draw a simple surfboard marker.
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.font = artFontSize + "px monospace";
@@ -214,9 +223,22 @@
           ctx.fillText("==", centerX, centerY);
         }
       });
+
+      // If the food was just eaten, show "yeh bro!" for 0.5 seconds.
+      if (showMessage) {
+        if (Date.now() - messageTimestamp < messageDuration) {
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.font = (artFontSize * 1.2) + "px monospace";
+          ctx.fillStyle = "#fff";
+          ctx.fillText("yeh bro!", canvas.width / 2, canvas.height / 2);
+        } else {
+          showMessage = false;
+        }
+      }
     }
 
-    // Generate a random grid position not occupied by the snake.
+    // Get a random grid cell that is not occupied by the snake.
     function randomFoodPosition() {
       let position;
       let collision;
@@ -236,13 +258,13 @@
       return position;
     }
 
-    // Game over: stop the game and alert the player.
+    // Handle game over.
     function gameOver() {
       clearInterval(gameInterval);
       alert("Game Over! Your score: " + score);
     }
 
-    // Reset the game to its initial state.
+    // Reset the game.
     function resetGame() {
       clearInterval(gameInterval);
       score = 0;
@@ -271,7 +293,7 @@
       }
     });
 
-    // On-screen button controls for mobile.
+    // On-screen button controls.
     document.getElementById('upButton').addEventListener('click', function() {
       if (direction.y !== 1) direction = { x: 0, y: -1 };
     });
@@ -285,8 +307,13 @@
       if (direction.x !== -1) direction = { x: 1, y: 0 };
     });
 
-    // Restart button.
+    // Reset button.
     document.getElementById('restartButton').addEventListener('click', resetGame);
+
+    // Request button: navigate to the provided URL.
+    document.getElementById('requestButton').addEventListener('click', function() {
+      window.location.href = "https://spruces.typeform.com/to/y8o1Wbn9";
+    });
 
     // Start the game loop.
     gameInterval = setInterval(gameLoop, gameSpeed);
