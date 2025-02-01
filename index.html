@@ -25,7 +25,7 @@
       margin: 20px auto;
       border: 2px solid #555;
     }
-    /* MESSAGE FOR FREE GAME OFFER */
+    /* MESSAGE FOR FREE GAME OFFER (updated threshold) */
     #freeGameMessage {
       font-size: 1.1em;
       margin: 10px 0;
@@ -42,7 +42,7 @@
       flex-direction: column;
       align-items: flex-start;
     }
-    /* Reset container now only holds the Reset Game button */
+    /* Reset container now holds only the Reset Game button (arrow removed here) */
     #resetContainer {
       display: inline-flex;
       align-items: center;
@@ -70,18 +70,19 @@
       justify-content: center;
       align-items: center;
     }
-    /* Container for the Right button and the glowing arrow */
+    /* Container for the Right directional button and the glowing arrow */
     .rightButtonContainer {
       position: relative;
       display: inline-block;
     }
-    /* The glowing red arrow positioned to the right of the "Right" button */
+    /* The glowing red arrow positioned to the right of the "Right" button.
+       It is slightly bigger, points down (using a down arrow), and glows. */
     #glowingArrow {
       position: absolute;
       top: 50%;
-      right: -20px; /* Adjust offset as needed */
+      right: -25px; /* Adjust as needed */
       transform: translateY(-50%);
-      font-size: 24px;
+      font-size: 30px;
       color: red;
       animation: glow 2s infinite alternate;
     }
@@ -109,12 +110,12 @@
   <h1>Ricky Plaza the surfer!</h1>
   <canvas id="gameCanvas"></canvas>
   
-  <!-- Free game offer message -->
+  <!-- Free game offer message (threshold updated to 30) -->
   <div id="freeGameMessage">
-    scoring 25 will allow you to request a custom game for free! 🎁
+    scoring 30 will allow you to request a custom game for free! 🎁
   </div>
   
-  <!-- Bottom row: left column contains Reset Game and Mute buttons; right column shows score -->
+  <!-- Bottom row: left column contains Reset Game and Mute buttons; right column shows Score -->
   <div id="bottomRow">
     <div id="leftControls">
       <div id="resetContainer">
@@ -135,7 +136,7 @@
       <button id="downButton">Down</button>
       <div class="rightButtonContainer">
         <button id="rightButton">Right</button>
-        <span id="glowingArrow">&#x2192;</span>
+        <span id="glowingArrow">&#x2193;</span>
       </div>
     </div>
   </div>
@@ -195,15 +196,15 @@
      ***********************/
     // Surfer art (for snake’s head) with label "surfer Ricky".
     const surferArt = [
-      "  \o/  ",
+      "  \\o/  ",
       "   |   ",
-      "  / \  "
+      "  / \\  "
     ];
     // Surfboard art (for food) with label "Surfboard".
     const surfboardArt = [
-      "/|\",
+      "/|\\",
       "|||",
-      "\|/"
+      "\\|/"
     ];
     
     // Helper: Draw multi-line ASCII art centered at (centerX, centerY) and draw label below.
@@ -320,7 +321,7 @@
         score++;
         document.getElementById('score').innerText = "Score: " + score;
         
-        // Increase snake speed by 2% (reduce interval time by 2%)
+        // Increase snake speed by 2% (reduce the game interval time by 2%).
         gameSpeed = gameSpeed * 0.98;
         clearInterval(gameInterval);
         gameInterval = setInterval(gameLoop, gameSpeed);
@@ -342,7 +343,7 @@
           return;
         }
       } else {
-        // Remove tail if no food is eaten.
+        // Remove tail segment if no food is eaten.
         snake.pop();
       }
     }
@@ -387,7 +388,7 @@
       }
     }
     
-    // Get a random food position that does not collide with the snake.
+    // Return a random food position that does not collide with the snake.
     function randomFoodPosition() {
       let position;
       let collision;
