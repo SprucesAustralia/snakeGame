@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Ensures proper scaling on mobile devices -->
+  <!-- Ensure proper scaling on mobile devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ricky Plaza the surfer!</title>
   <style>
@@ -17,111 +17,149 @@
     h1 {
       margin-top: 20px;
     }
+    /* The game canvas (square) */
     canvas {
       background-color: #000;
       display: block;
       margin: 20px auto;
       border: 2px solid #555;
     }
-    #score {
-      font-size: 1.5em;
+    /* Free game message below the canvas */
+    #freeGameMessage {
+      font-size: 1.1em;
+      margin: 10px 0;
     }
-    /* General button styling */
-    button {
-      font-size: 1.2em;
-      padding: 10px 20px;
-      margin: 10px;
-      cursor: pointer;
-      text-align: center;
-      vertical-align: middle;
-    }
-    /* Directional buttons (on‑screen arrow keys) use a slightly smaller font */
-    #directionalControls button {
-      width: 60px;
-      height: 60px;
-      margin: 5px;
-      font-size: 0.9em;
-    }
-    /* Arrange the arrow buttons like a laptop keyboard */
-    #middleRow {
+    /* Bottom row: two columns – left for reset & mute, right for score */
+    #bottomRow {
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
+      align-items: center;
+      margin: 10px 20px;
     }
-    /* Container for all controls */
-    #controls {
-      margin-bottom: 20px;
+    #leftControls {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
     }
-    /* Container for Reset Game button and its inline arrow */
     #resetContainer {
       display: inline-flex;
       align-items: center;
       justify-content: center;
     }
-    /* The small, light‑red down arrow (placed to the right of the Reset Game button) */
+    /* The small, light‑red down arrow (to the right of Reset Game button) */
     #downArrow {
       font-size: 16px;
       color: lightcoral;
       margin-left: 10px;
+    }
+    #scoreContainer {
+      text-align: right;
+      flex-grow: 1;
+    }
+    /* Larger directional buttons */
+    #directionalControls {
+      margin: 20px auto;
+    }
+    #directionalControls button {
+      width: 80px;
+      height: 80px;
+      margin: 5px;
+      font-size: 1.2em;
+      text-align: center;
+      vertical-align: middle;
+    }
+    /* Arrange arrow buttons like a laptop keyboard */
+    #middleRow {
+      display: flex;
+      justify-content: center;
+    }
+    /* Request button */
+    #requestButton {
+      font-size: 1.2em;
+      padding: 10px 20px;
+      margin: 20px;
+      cursor: pointer;
+    }
+    /* Mute button styling */
+    #muteButton {
+      font-size: 1em;
+      padding: 5px 10px;
+      margin-top: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <h1>Ricky Plaza the surfer!</h1>
   <canvas id="gameCanvas"></canvas>
-  <p id="score">Score: 0</p>
   
-  <div id="controls">
-    <!-- Directional buttons -->
-    <div id="directionalControls">
-      <button id="upButton">Up</button>
-      <div id="middleRow">
-        <button id="leftButton">Left</button>
-        <button id="downButton">Down</button>
-        <button id="rightButton">Right</button>
-      </div>
-    </div>
-    <!-- Reset Game button with inline arrow -->
-    <div id="resetContainer">
-      <button id="restartButton">Reset Game</button>
-      <span id="downArrow">&#x2193;</span>
-    </div>
-    <!-- Request your own game button -->
-    <button id="requestButton">request your own game to gift someone!</button>
+  <!-- Free game message -->
+  <div id="freeGameMessage">
+    scoring 25 will allow you to request a custom game for free! 🎁
   </div>
   
+  <!-- Bottom row: Reset Game button (with arrow and mute) and Score tally -->
+  <div id="bottomRow">
+    <div id="leftControls">
+      <div id="resetContainer">
+        <button id="restartButton">Reset Game</button>
+        <span id="downArrow">&#x2193;</span>
+      </div>
+      <button id="muteButton">🔊</button>
+    </div>
+    <div id="scoreContainer">
+      <p id="score">Score: 0</p>
+    </div>
+  </div>
+  
+  <!-- Directional controls -->
+  <div id="directionalControls">
+    <button id="upButton">Up</button>
+    <div id="middleRow">
+      <button id="leftButton">Left</button>
+      <button id="downButton">Down</button>
+      <button id="rightButton">Right</button>
+    </div>
+  </div>
+  
+  <!-- Request custom game button -->
+  <button id="requestButton">request your own game to gift someone!</button>
+  
   <script>
-    // Get canvas and drawing context.
+    /********************
+     * CANVAS & GAME SETUP
+     ********************/
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-
-    // Grid settings.
+    
     let gridSize = 15;      // Number of cells per row/column.
     let cellSize;           // Computed based on canvas size.
-    let artFontSize;        // Font size for drawing ASCII art.
-
-    // Responsive canvas sizing.
+    let artFontSize;        // Font size used for drawing ASCII art.
+    
     function resizeCanvas() {
       canvas.width = Math.min(window.innerWidth * 0.95, 500);
-      canvas.height = canvas.width;  // Keep it square.
+      canvas.height = canvas.width;  // Square canvas.
       cellSize = canvas.width / gridSize;
       artFontSize = Math.floor(cellSize * 0.5);
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-
-    // Game state variables.
+    
+    /********************
+     * GAME VARIABLES
+     ********************/
     let score = 0;
     let direction = { x: 1, y: 0 };  // Starts moving right.
-    let gameSpeed = 150;             // Milliseconds per game tick.
+    let gameSpeed = 150;             // Milliseconds per tick.
     let gameInterval;
-    let gamePaused = false;          // Used during countdown.
-
-    // For the "yeh bro!" message display.
+    let gamePaused = false;          // Paused during countdown.
+    
+    // For the "yeh bro!" message.
     let showMessage = false;
     let messageTimestamp = 0;
     const messageDuration = 500;  // 0.5 seconds.
-
-    // Initialize the snake.
+    
+    // Initialize snake.
     function getInitialSnake() {
       const startX = Math.floor(gridSize / 2);
       const startY = Math.floor(gridSize / 2);
@@ -132,26 +170,27 @@
       ];
     }
     let snake = getInitialSnake();
-
+    
     // Place food at a random cell.
     let food = randomFoodPosition();
-
-    // ASCII Art definitions:
-    // Surfer art (head).
+    
+    /********************
+     * ASCII ART DEFINITIONS
+     ********************/
+    // Surfer art for snake head.
     const surferArt = [
       "  \\o/  ",
       "   |   ",
       "  / \\  "
     ];
-    // Updated surfboard art (food).
+    // Surfboard art (food).
     const surfboardArt = [
       "/|\\",
       "|||",
       "\\|/"
     ];
-
-    // Helper function: Draw multi-line ASCII art centered at (centerX, centerY)
-    // with a label below the art.
+    
+    // Draw multi-line ASCII art centered at (centerX, centerY) with a label below.
     function drawArt(artArray, centerX, centerY, fontSize, artColor, labelText) {
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
@@ -168,96 +207,132 @@
       ctx.fillStyle = "#fff";
       ctx.fillText(labelText, centerX, startY + totalHeight + (fontSize * 0.2));
     }
-
-    // Main game loop.
+    
+    /********************
+     * BACKGROUND MUSIC SETUP
+     ********************/
+    let isMuted = false;
+    let audioCtx = null;
+    let musicInterval = null;
+    const melody = [440, 494, 523, 587, 523, 494, 440]; // Simple melody frequencies.
+    let melodyIndex = 0;
+    
+    function playBeep(frequency, duration) {
+      if (isMuted) return;
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      let oscillator = audioCtx.createOscillator();
+      oscillator.frequency.value = frequency;
+      oscillator.connect(audioCtx.destination);
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+      }, duration);
+    }
+    
+    function startMusic() {
+      if (isMuted) return;
+      if (musicInterval) clearInterval(musicInterval);
+      musicInterval = setInterval(() => {
+        playBeep(melody[melodyIndex], 100);
+        melodyIndex = (melodyIndex + 1) % melody.length;
+      }, 500);
+    }
+    
+    function stopMusic() {
+      if (musicInterval) {
+        clearInterval(musicInterval);
+        musicInterval = null;
+      }
+    }
+    
+    /********************
+     * MAIN GAME LOOP & LOGIC
+     ********************/
     function gameLoop() {
       if (!gamePaused) {
         update();
         draw();
       }
     }
-
-    // Update game state.
+    
     function update() {
-      // Calculate new head position.
+      // Compute new head position.
       const newHead = {
         x: snake[0].x + direction.x,
         y: snake[0].y + direction.y
       };
-
-      // Check for wall collisions.
+    
+      // Wall collision check.
       if (newHead.x < 0 || newHead.x >= gridSize ||
           newHead.y < 0 || newHead.y >= gridSize) {
         return gameOver();
       }
-
-      // Check for self-collision.
+    
+      // Self-collision check.
       for (let segment of snake) {
         if (newHead.x === segment.x && newHead.y === segment.y) {
           return gameOver();
         }
       }
-
-      // Add the new head.
+    
+      // Add new head.
       snake.unshift(newHead);
-
-      // --- Lenient Food Collision Detection ---
-      // Compute snake head's cell rectangle.
+    
+      /********************
+       * LENIENT FOOD COLLISION DETECTION
+       ********************/
       let snakeLeft   = newHead.x * cellSize;
       let snakeTop    = newHead.y * cellSize;
       let snakeRight  = snakeLeft + cellSize;
       let snakeBottom = snakeTop + cellSize;
-
-      // Compute food's bounding box based on its ASCII art.
+    
       let foodCenterX = food.x * cellSize + cellSize / 2;
       let foodCenterY = food.y * cellSize + cellSize / 2;
-      let foodWidth  = 1.8 * artFontSize; // Approximate width (3 characters * 0.6 * fontSize)
+      let foodWidth  = 1.8 * artFontSize; // Approximate width.
       let foodHeight = 3 * artFontSize;    // 3 lines tall.
       let foodLeft   = foodCenterX - foodWidth / 2;
       let foodRight  = foodCenterX + foodWidth / 2;
       let foodTop    = foodCenterY - foodHeight / 2;
       let foodBottom = foodCenterY + foodHeight / 2;
-
-      // Check if snake's head cell overlaps the food's drawn area.
+    
       if (snakeRight > foodLeft && snakeLeft < foodRight &&
           snakeBottom > foodTop && snakeTop < foodBottom) {
         // Food is eaten.
         score++;
         document.getElementById('score').innerText = "Score: " + score;
         food = randomFoodPosition();
-        // Trigger the "yeh bro!" message.
         showMessage = true;
         messageTimestamp = Date.now();
-        // Grow snake by 3 segments (the snake already grew by 1 by unshifting newHead).
+        // Grow snake by 3 segments (one is already added by unshifting).
         let tail = snake[snake.length - 1];
         snake.push({ x: tail.x, y: tail.y });
         snake.push({ x: tail.x, y: tail.y });
       } else {
-        // Remove the tail segment if no food was eaten.
+        // No food eaten: remove tail.
         snake.pop();
       }
     }
-
-    // Draw the game state.
+    
     function draw() {
-      // Clear the canvas.
+      // Clear canvas.
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Draw food as a surfboard.
+    
+      // Draw the food (surfboard).
       let foodCenterX = food.x * cellSize + cellSize / 2;
       let foodCenterY = food.y * cellSize + cellSize / 2;
       drawArt(surfboardArt, foodCenterX, foodCenterY, artFontSize, "#0f0", "Surfboard");
-
+    
       // Draw the snake.
       snake.forEach((segment, index) => {
         let centerX = segment.x * cellSize + cellSize / 2;
         let centerY = segment.y * cellSize + cellSize / 2;
         if (index === 0) {
-          // Head: draw the surfer art with label "surfer Ricky".
+          // Head with surfer art and label "surfer Ricky".
           drawArt(surferArt, centerX, centerY, artFontSize, "#ff0", "surfer Ricky");
         } else {
-          // Body: draw a simple marker.
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.font = artFontSize + "px monospace";
@@ -265,8 +340,8 @@
           ctx.fillText("==", centerX, centerY);
         }
       });
-
-      // If "yeh bro!" is active, display it for 0.5 seconds.
+    
+      // Display "yeh bro!" message briefly.
       if (showMessage) {
         if (Date.now() - messageTimestamp < messageDuration) {
           ctx.textAlign = "center";
@@ -279,8 +354,7 @@
         }
       }
     }
-
-    // Return a random grid cell that is not occupied by the snake.
+    
     function randomFoodPosition() {
       let position;
       let collision;
@@ -299,29 +373,29 @@
       } while (collision);
       return position;
     }
-
-    // Handle game over.
+    
     function gameOver() {
       clearInterval(gameInterval);
+      stopMusic();
       alert("Game Over! Your score: " + score);
     }
-
-    // Countdown before the game starts.
+    
+    /********************
+     * COUNTDOWN & GAME RESET
+     ********************/
     function startCountdown(callback) {
       gamePaused = true;
-      let count = 3;
+      let count = 2;  // Start at 2.
       let countdownInterval = setInterval(function() {
-        // Clear canvas.
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Draw the countdown text.
         ctx.fillStyle = "#fff";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.font = (canvas.width / 4) + "px monospace"; // Big number.
+        ctx.font = (canvas.width / 4) + "px monospace";
         if (count > 0) {
           ctx.fillText(count, canvas.width / 2, canvas.height / 2);
-        } else {
+        } else if (count === 0) {
           ctx.fillText("go!", canvas.width / 2, canvas.height / 2);
         }
         count--;
@@ -332,22 +406,24 @@
         }
       }, 1000);
     }
-
-    // Reset the game.
+    
     function resetGame() {
       clearInterval(gameInterval);
+      stopMusic();
       score = 0;
       document.getElementById('score').innerText = "Score: 0";
       direction = { x: 1, y: 0 };
       snake = getInitialSnake();
       food = randomFoodPosition();
-      // Start countdown before beginning the game loop.
       startCountdown(function() {
+        startMusic();
         gameInterval = setInterval(gameLoop, gameSpeed);
       });
     }
-
-    // Keyboard controls.
+    
+    /********************
+     * CONTROLS & SOUND TOGGLES
+     ********************/
     document.addEventListener('keydown', function(e) {
       switch (e.key) {
         case "ArrowUp":
@@ -364,8 +440,8 @@
           break;
       }
     });
-
-    // On-screen directional button controls.
+    
+    // Directional on-screen buttons.
     document.getElementById('upButton').addEventListener('click', function() {
       if (direction.y !== 1) direction = { x: 0, y: -1 };
     });
@@ -378,16 +454,28 @@
     document.getElementById('rightButton').addEventListener('click', function() {
       if (direction.x !== -1) direction = { x: 1, y: 0 };
     });
-
-    // Reset button.
+    
+    // Reset Game button.
     document.getElementById('restartButton').addEventListener('click', resetGame);
-
-    // Request button: redirect to the provided URL.
+    
+    // Mute button.
+    document.getElementById('muteButton').addEventListener('click', function() {
+      isMuted = !isMuted;
+      if (isMuted) {
+        document.getElementById('muteButton').innerText = "🔇";
+        stopMusic();
+      } else {
+        document.getElementById('muteButton').innerText = "🔊";
+        startMusic();
+      }
+    });
+    
+    // Request custom game button.
     document.getElementById('requestButton').addEventListener('click', function() {
       window.location.href = "https://spruces.typeform.com/to/y8o1Wbn9";
     });
-
-    // Start the game with a countdown.
+    
+    // Start the game for the first time.
     resetGame();
   </script>
 </body>
